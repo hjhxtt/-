@@ -4,13 +4,14 @@ import Vue from 'vue'
 import app from './App.vue'
 
 //按需导入mint-ui
-import { Header,Swipe,SwipeItem,Button,Lazyload} from 'mint-ui';
+import { Header,Swipe,SwipeItem,Button,Lazyload,Switch} from 'mint-ui';
 import 'mint-ui/lib/style.css'
 //导入
 Vue.component(Header.name, Header);
 Vue.component(Swipe.name, Swipe);
 Vue.component(SwipeItem.name, SwipeItem);
 Vue.component(Button.name, Button);
+Vue.component(Switch.name, Switch);
 
 Vue.use(Lazyload);
 
@@ -45,9 +46,11 @@ Vue.use(Vuex);
 Vue.filter('dataFormat',function(dataStr,pattern = 'YYYY-MM-DD HH:mm:ss'){
     return moment(dataStr).format(pattern)
 })
+//把购物车数据放入本地存储
+var car = JSON.parse(localStorage.getItem('car')||"")
 const store = new Vuex.Store({
     state:{
-        carItem:[]
+        carItem: car
     },
     mutations:{
         addInfo(state,carinfo){
@@ -63,7 +66,45 @@ const store = new Vuex.Store({
             })
             if(!flag){
                 state.carItem.push(carinfo)
+                
             }
+            //把购物车数据放入本地存储
+            localStorage.setItem('car', JSON.stringify(state.carItem))
+        },
+        updateGoodsInfo(state,goodsinfo){
+            state.carItem.some(item=>{
+                if (item.id == goodsinfo.id){
+                    item.count = parseInt(goodsinfo.count)
+                    return true
+                }
+            })
+            //购物车内修改数量后把最新的购物车数据放入本地存储
+            localStorage.setItem('car', JSON.stringify(state.carItem))
+        },
+        removeFormCar(state,id){
+            state.carItem.some((item,i)=>{
+                if(item.id == id){
+                    state.carItem.splice(i,1)
+                    return true
+                }
+            })
+            localStorage.setItem('car', JSON.stringify(state.carItem))
+        },
+        getGoodsSelected(state){
+            var o ={}
+            state.carItem.forEach(item=>{
+                o[item.id] = item.selected
+            })
+            return o
+        },
+        updateGoodsSelected(state,info){
+            state.carItem.some(item=>{
+                if(item.id == info.id){
+                    item.selected == info.selected
+                }
+            })
+            //购物车内修改数量后把最新的购物车数据放入本地存储
+            localStorage.setItem('car', JSON.stringify(state.carItem))
         }
     },
     getters:{
@@ -75,6 +116,23 @@ const store = new Vuex.Store({
             })
             return c
             
+        },
+        getGoodsCount(state){
+            var o ={}
+            state.carItem.forEach(item=>{
+                o[item.id] = item.count
+            })
+            return o
+        },
+        getGoodsCountAndAmount (state){
+            var o ={}
+            state.carItem.forEach(item => {
+                if(item.selected){
+                    o.count += item.count
+                    o.amount += item.count*item.pric
+                }
+            })
+            return o
         }
     }
 
